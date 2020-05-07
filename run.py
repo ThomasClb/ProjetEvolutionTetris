@@ -3,7 +3,7 @@ import random as rd
 
 def main():
     env = Tetris()
-    render_delay = 0.1
+    render_delay = 0.01
     for i in range(20):
         next_states = env.get_next_states()
         choosen_action_index = rd.randint(0, len(next_states.items()) - 1)
