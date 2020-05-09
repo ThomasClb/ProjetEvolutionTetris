@@ -3,7 +3,7 @@ from es import CMAES, SimpleGA, OpenES, PEPG
 import numpy as np
 import random as rd
 
-MAX_ITERATIONS = 4000
+MAX_ITERATIONS = 100
 BOARD_WIDTH = 10
 ROTATIONS = [0, 90, 180, 270]
 RENDER_DELAY = 0.001
@@ -128,48 +128,18 @@ def evaluate(solution, render):
     ann = NeuralNetwork(N_IN, 5, 5, N_OUT)
     ann.gene_to_nn(solution)
     final_score = play_tetris(ann, render)
-
-    if(final_score > best_score):
-        print("BEST_SCORE = ", final_score)
-        best_score = final_score
-        np.savetxt("best_nn" + str(best_score) + ".txt", solution)
-
-    return final_score
+    print("SCORE : ", final_score)
 
 
-def test_solver(solver):
-    history = []
-    for j in range(MAX_ITERATIONS):
-        solutions = solver.ask()
-        fitness_list = np.zeros(solver.popsize)
 
-        for i in range(solver.popsize):
-            if(i == 0 and j % 10 == 0):
-                render = True
-            else:
-                render = False
-            fitness_list[i] = evaluate(solutions[i], render)
-
-        solver.tell(fitness_list)
-        result = solver.result()
-        history.append(result[1])
-
-        print(j, result[1])
-
-
+def test_nn():
+    init = np.loadtxt("best_nn88.txt")
+    evaluate(init, True)
 
 
 
 def main():
-    # test_nn()
-
-    init = np.loadtxt("best_nn73.txt")
-    cmaes = CMAES(num_params = N_NEURONS,
-                sigma_init=0.10,       # initial standard deviation
-                popsize=255,           # population size
-                weight_decay=0.01,
-                init_cma = init)
-    test_solver(cmaes)
+    test_nn()
 
 if __name__ == '__main__':
     main()

@@ -273,6 +273,9 @@ class Tetris:
 
 
     def play(self, x, rotation, render=False, render_delay=None):
+        #   args
+        # x : là où on fait tomber la pieces
+        # rotation :0, 90, 180, 270
         '''Makes a play given a position and a rotation, returning the reward and if the game is over'''
         self.current_pos = [x, 0]
         self.current_rotation = rotation
@@ -292,12 +295,13 @@ class Tetris:
         score = 1 + (lines_cleared ** 2) * Tetris.BOARD_WIDTH
         self.score += score
 
+
         # Start new round
         self._new_round()
         if self.game_over:
             score -= 2
 
-        return score, self.game_over
+        return score, self.game_over, self.score
 
 
     def render(self):
