@@ -88,26 +88,19 @@ class CMAES:
   def __init__(self, num_params,      # number of model parameters
                sigma_init=0.10,       # initial standard deviation
                popsize=255,           # population size
-               weight_decay=0.01,
-               init_cma = []):    # weight decay coefficient
+               weight_decay=0.01):    # weight decay coefficient
 
     self.num_params = num_params
     self.sigma_init = sigma_init
     self.popsize = popsize
     self.weight_decay = weight_decay
     self.solutions = None
-    if(init_cma == []):
-        init_cma = self.num_params*[0]
 
     import cma
-    self.es = cma.CMAEvolutionStrategy( init_cma,
-                                        self.sigma_init,
-                                        {'popsize': self.popsize
-                                        })
 
-    # self.es = cma.CMAEvolutionStrategy( self.num_params * [0],
-    #                                     self.sigma_init,
-    #                                     {'popsize': self.popsize})
+    self.es = cma.CMAEvolutionStrategy( self.num_params * [0],
+                                        self.sigma_init,
+                                        {'popsize': self.popsize})
 
   def rms_stdev(self):
     sigma = self.es.result[6]

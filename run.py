@@ -9,8 +9,11 @@ ROTATIONS = [0, 90, 180, 270]
 RENDER_DELAY = 0.001
 N_IN = 4  # Entrees du NN : state = [lines, holes, total_bumpiness, sum_height]
 N_OUT = BOARD_WIDTH + 4 # Sorties du nn : x (BOARD_WIDTH), rotation (4)
-N_NEURONS = (N_IN*5 + 5) + (5*5 + 5) + (5*N_OUT + N_OUT)
+N_LAYER1 = 7 # nombre de neurones dans la couche 1
+N_LAYER2 = 7
+N_NEURONS = (N_IN*N_LAYER1 + N_LAYER1) + (N_LAYER1*N_LAYER2 + N_LAYER2) + (N_LAYER2*N_OUT + N_OUT) # nbre total de neurones
 best_score = 0
+best_fitness = 0
 
 
 class FCLayer:
@@ -34,7 +37,7 @@ class NeuralNetwork:
         self.output = FCLayer(np.random.random((n_output, n_layer2)), np.random.random((n_output,1)))
 
     def gene_to_nn(self, genes):
-        # import du genome dans le nn
+        # onvertit liste de genes en neural network
         assert (len(genes) == self.n_neurons)
         gene_index = 0
         for x, line in enumerate(self.layer1.weights):
@@ -68,11 +71,11 @@ class NeuralNetwork:
                 gene_index += 1
 
 
-        assert (gene_index == self.n_neurons)
+        assert (gene_index == self.n_neurons) # Pour s'assurer qu'on a bien extrait tout le genome
 
     def compute(self, inputs):
         inputs = np.asarray(inputs)
-        inputs = np.reshape(inputs, (self.n_inputs, 1))
+        inputs = np.reshape(inputs, (self.n_inputs, 1)) # transformation de liste en vecteur numpy
         x = np.dot(self.layer1.weights, inputs) + self.layer1.biases
         x = np.dot(self.layer2.weights, x) + self.layer2.biases
         x = np.dot(self.output.weights, x) + self.output.biases
@@ -81,15 +84,21 @@ class NeuralNetwork:
 def getSecond(t):
     return t[1]
 
+
+
 def choose_action(next_actions, result_nn):
+    # Les BOARD_WIDTH premiers neurones de sortie sont responsables du choix en x de où la piece tombe
+    # Les 4 derniers neurones de sortie sont responsables du choix de rotation
+    # choice_list = list((x_drop, rotation), sortie_du_nn_en_x * sortie_du_nn_en_rotation)
     choice_list = []
     for x_index, x_prob in enumerate(result_nn[:BOARD_WIDTH]):
         for r_index, r_prob in enumerate(result_nn[BOARD_WIDTH:]):
-            # print(x_prob)
             choice_list.append(((x_index, ROTATIONS[r_index]), (x_prob * r_prob)[0]))
 
+    # On trie la liste pour avoir les meilleures combinaisons (x,rotation) en premier
     choice_list.sort(key = getSecond, reverse = True)
 
+    # On choisit la meilleure combinaison qui est autorisée (en pratique, la première action dans choice_list qui est aussi dans next_action)
     for action, prob in choice_list:
         if(action in next_actions):
             return action
@@ -107,7 +116,7 @@ def play_tetris(ann, render):
     while not(done):
         next_states = env.get_next_states()
         possible_action = [item[0] for item in next_states.items()]
-        result_nn = ann.compute(obs)
+        result_nn = ann.compute(obs) # sortie du NN avec les observations en input
         chosen_action = choose_action(possible_action, result_nn)
 
         best_action = None
@@ -125,25 +134,32 @@ def play_tetris(ann, render):
 
 def evaluate(solution, render):
     global best_score
-    ann = NeuralNetwork(N_IN, 5, 5, N_OUT)
-    ann.gene_to_nn(solution)
+    ann = NeuralNetwork(N_IN, N_LAYER1, N_LAYER2, N_OUT)
+    ann.gene_to_nn(solution) # Conversion du gene en NN
     final_score = play_tetris(ann, render)
 
+    # Pour garder le NN du meilleur score
     if(final_score > best_score):
         print("BEST_SCORE = ", final_score)
         best_score = final_score
-        np.savetxt("best_nn" + str(best_score) + ".txt", solution)
+        np.savetxt("best_score/best_nn" + str(best_score) + ".txt", solution)
 
     return final_score
 
 
+
 def test_solver(solver):
+    # Execution du solver (CMAES, OpenAI...)
+    global best_fitness
     history = []
+
+    # Code dans simple_es_example.ipynb
     for j in range(MAX_ITERATIONS):
         solutions = solver.ask()
         fitness_list = np.zeros(solver.popsize)
 
         for i in range(solver.popsize):
+            # Juste pour parfois voir comment joue le programme
             if(i == 0 and j % 10 == 0):
                 render = True
             else:
@@ -156,20 +172,26 @@ def test_solver(solver):
 
         print(j, result[1])
 
+        # Pour conserver le NN du meilleur fitness
+        if(result[1] > best_fitness):
+            print("BEST_FITNESS = ", result[1])
+            best_fitness = result[1]
+            np.savetxt("best_fitness/best_nn" + str(int(result[1])) + ".txt", result[0])
+
+
+
 
 
 
 
 def main():
-    # test_nn()
+    solver = CMAES(num_params = N_NEURONS,
+                sigma_init=0.50,       # initial standard deviation
+                popsize=512,           # population size
+                weight_decay=0.01)
 
-    init = np.loadtxt("best_nn73.txt")
-    cmaes = CMAES(num_params = N_NEURONS,
-                sigma_init=0.10,       # initial standard deviation
-                popsize=255,           # population size
-                weight_decay=0.01,
-                init_cma = init)
-    test_solver(cmaes)
+    # solver = OpenES(N_NEURONS)
+    test_solver(solver)
 
 if __name__ == '__main__':
     main()

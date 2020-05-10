@@ -3,14 +3,17 @@ from es import CMAES, SimpleGA, OpenES, PEPG
 import numpy as np
 import random as rd
 
-MAX_ITERATIONS = 100
+MAX_ITERATIONS = 4000
 BOARD_WIDTH = 10
 ROTATIONS = [0, 90, 180, 270]
 RENDER_DELAY = 0.001
 N_IN = 4  # Entrees du NN : state = [lines, holes, total_bumpiness, sum_height]
 N_OUT = BOARD_WIDTH + 4 # Sorties du nn : x (BOARD_WIDTH), rotation (4)
-N_NEURONS = (N_IN*5 + 5) + (5*5 + 5) + (5*N_OUT + N_OUT)
+N_LAYER1 = 7
+N_LAYER2 = 7
+N_NEURONS = (N_IN*N_LAYER1 + N_LAYER1) + (N_LAYER1*N_LAYER2 + N_LAYER2) + (N_LAYER2*N_OUT + N_OUT)
 best_score = 0
+FILE_TEST = "best_fitness/best_nn20042613181571.txt"
 
 
 class FCLayer:
@@ -125,21 +128,20 @@ def play_tetris(ann, render):
 
 def evaluate(solution, render):
     global best_score
-    ann = NeuralNetwork(N_IN, 5, 5, N_OUT)
+    ann = NeuralNetwork(N_IN, N_LAYER1, N_LAYER2, N_OUT)
     ann.gene_to_nn(solution)
     final_score = play_tetris(ann, render)
-    print("SCORE : ", final_score)
+    print("BEST_SCORE = ", final_score)
+    return final_score
 
 
 
-def test_nn():
-    init = np.loadtxt("best_nn88.txt")
-    evaluate(init, True)
 
 
 
 def main():
-    test_nn()
+    init = np.loadtxt(FILE_TEST)
+    evaluate(init, True)
 
 if __name__ == '__main__':
     main()
