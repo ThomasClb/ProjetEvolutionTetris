@@ -82,7 +82,7 @@ class Tetris:
         self._new_round()
         self.score = 0
         # return self._get_board_props(self.board)
-        return self._get_board_props(self.board)
+        return self._get_board_props(self.board) + [self.next_piece]
 
 
     def _get_rotated_piece(self):
@@ -264,7 +264,7 @@ class Tetris:
                 if pos[1] >= 0:
                     board = self._add_piece_to_board(piece, pos)
                     # states[(x, rotation)] = self._get_board_props(board)
-                    states[(x, rotation)] = self._get_board_props(board)
+                    states[(x, rotation)] = self._get_board_props(board) + [piece_id]
 
         return states
 
